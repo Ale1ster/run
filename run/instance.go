@@ -24,11 +24,11 @@ type Instance struct {
 // where any encountered (non-nil) errors are propagated.
 // An instance can be run at most once,
 // with subsequent attempts returning a nil channel.
-func (i Instance) Run(ctx context.Context) <-chan error {
+func (i *Instance) Run(ctx context.Context) <-chan error {
 	return i.run(ctx)
 }
 
-func (i Instance) run(ctx context.Context) <-chan error {
+func (i *Instance) run(ctx context.Context) <-chan error {
 	var errCh chan error
 
 	i.once.Do(func() {
@@ -42,7 +42,7 @@ func (i Instance) run(ctx context.Context) <-chan error {
 
 // runCh controls the execution of an instance based on its options
 // and propagates the returned errors to the provided channel.
-func (i Instance) runCh(ctx context.Context, errCh chan<- error) {
+func (i *Instance) runCh(ctx context.Context, errCh chan<- error) {
 	defer close(errCh)
 	// Defer recovery if the appropriate option is set.
 	if i.opts.calm() {
@@ -70,7 +70,7 @@ func (i Instance) runCh(ctx context.Context, errCh chan<- error) {
 
 		// Anonymous function to allow for immediate execution
 		// of deferred context cancellation.
-		err := func() error {
+		err = func() error {
 			ctxt, cancel := i.withContextTimeout(ctx)
 			defer cancel()
 
@@ -85,7 +85,7 @@ func (i Instance) runCh(ctx context.Context, errCh chan<- error) {
 // rerun indicates whether a runnable should run again after termination
 // according to its options, as well as the delay after which it will.
 // It should be provided with the return value of the previous execution.
-func (i Instance) rerun(err error) (rerun bool, after time.Duration) {
+func (i *Instance) rerun(err error) (rerun bool, after time.Duration) {
 	if i.opts == nil {
 		return
 	}
@@ -124,7 +124,7 @@ func (i Instance) rerun(err error) (rerun bool, after time.Duration) {
 // withContextTimeout creates a child of the provided context,
 // applying timeout if applicable,
 // and returns it along with its cancellation function.
-func (i Instance) withContextTimeout(ctx context.Context) (
+func (i *Instance) withContextTimeout(ctx context.Context) (
 	context.Context, context.CancelFunc) {
 
 	if timeout := i.opts.constrained.timeout; timeout != 0 {
