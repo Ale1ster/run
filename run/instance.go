@@ -32,7 +32,11 @@ func (i *Instance) run(ctx context.Context) <-chan error {
 	var errCh chan error
 
 	i.once.Do(func() {
-		errCh = make(chan error, i.opts.errChanSize)
+		var chanSize uint
+		if i.opts != nil {
+			chanSize = i.opts.errChanSize
+		}
+		errCh = make(chan error, chanSize)
 
 		go i.runCh(ctx, errCh)
 	})
@@ -127,7 +131,8 @@ func (i *Instance) rerun(err error) (rerun bool, after time.Duration) {
 func (i *Instance) withContextTimeout(ctx context.Context) (
 	context.Context, context.CancelFunc) {
 
-	if timeout := i.opts.constrained.timeout; timeout != 0 {
+	if i.opts != nil && i.opts.constrained.timeout != 0 {
+		timeout := i.opts.constrained.timeout
 		return context.WithTimeout(ctx, timeout)
 	}
 	return context.WithCancel(ctx)
